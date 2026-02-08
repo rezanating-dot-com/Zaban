@@ -14,7 +14,7 @@ export class AnthropicProvider implements AIProvider {
   async complete(prompt: string, systemPrompt?: string): Promise<string> {
     const message = await this.client.messages.create({
       model: this.model,
-      max_tokens: 4096,
+      max_tokens: 8192,
       system: systemPrompt || "",
       messages: [{ role: "user", content: prompt }],
     });

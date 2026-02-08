@@ -28,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Loader2, MoreVertical, Trash2 } from "lucide-react";
+import { Loader2, MoreVertical, RefreshCw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ConjugationGrid } from "./conjugation-grid";
 import { useLanguage } from "@/components/language-provider";
@@ -74,6 +74,7 @@ export default function ConjugationPage() {
   const [inputVerb, setInputVerb] = useState("");
   const [inputForm, setInputForm] = useState("");
   const [verbToDelete, setVerbToDelete] = useState<Verb | null>(null);
+  const [retryingVerbId, setRetryingVerbId] = useState<number | null>(null);
 
   const fetchVerbs = useCallback(async () => {
     const res = await fetch(`/api/conjugation?lang=${activeLanguage}`);
@@ -139,6 +140,29 @@ export default function ConjugationPage() {
         setConjugations([]);
       }
       fetchVerbs();
+    }
+  };
+
+  const handleRetry = async (verb: Verb) => {
+    setRetryingVerbId(verb.id);
+    try {
+      const res = await fetch(`/api/conjugation/${verb.id}`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success("Conjugation regenerated");
+        await fetchVerbs();
+        setSelectedVerb(data.verb);
+        setConjugations(data.conjugations || []);
+      } else {
+        const err = await res.json();
+        toast.error(err.error || "Retry failed");
+      }
+    } catch {
+      toast.error("Retry failed");
+    } finally {
+      setRetryingVerbId(null);
     }
   };
 
@@ -228,6 +252,16 @@ export default function ConjugationPage() {
                   </button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem
+                    disabled={retryingVerbId === verb.id}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleRetry(verb);
+                    }}
+                  >
+                    <RefreshCw className={`h-4 w-4 mr-2 ${retryingVerbId === verb.id ? "animate-spin" : ""}`} />
+                    {retryingVerbId === verb.id ? "Retrying..." : "Retry"}
+                  </DropdownMenuItem>
                   <DropdownMenuItem
                     className="text-destructive focus:text-destructive"
                     onClick={(e) => {
