@@ -49,6 +49,17 @@ const PROVIDER_CONFIG: Record<
     keyPlaceholder: "sk-ant-...",
     envVar: "ANTHROPIC_API_KEY",
   },
+  gemini: {
+    label: "Google (Gemini)",
+    models: [
+      { value: "gemini-2.0-flash", label: "Gemini 2.0 Flash" },
+      { value: "gemini-2.0-flash-lite", label: "Gemini 2.0 Flash Lite" },
+      { value: "gemini-1.5-pro", label: "Gemini 1.5 Pro" },
+    ],
+    defaultModel: "gemini-2.0-flash",
+    keyPlaceholder: "AIza...",
+    envVar: "GEMINI_API_KEY",
+  },
   deepseek: {
     label: "DeepSeek",
     models: [
