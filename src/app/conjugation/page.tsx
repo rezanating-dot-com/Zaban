@@ -28,7 +28,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ChevronDown, Loader2, MoreVertical, RefreshCw, Trash2 } from "lucide-react";
+import { ChevronDown, Loader2, MoreVertical, RefreshCw, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ConjugationGrid } from "./conjugation-grid";
 import { useLanguage } from "@/components/language-provider";
@@ -76,17 +76,30 @@ export default function ConjugationPage() {
   const [verbToDelete, setVerbToDelete] = useState<Verb | null>(null);
   const [retryingVerbId, setRetryingVerbId] = useState<number | null>(null);
   const [showAllVerbs, setShowAllVerbs] = useState(false);
+  const [verbSearch, setVerbSearch] = useState("");
 
   const COLLAPSED_LIMIT = 5;
+  const filteredVerbs = useMemo(() => {
+    if (!verbSearch.trim()) return verbs;
+    const q = verbSearch.trim().toLowerCase();
+    return verbs.filter(
+      (v) =>
+        v.infinitive.toLowerCase().includes(q) ||
+        v.meaning?.toLowerCase().includes(q) ||
+        v.root?.toLowerCase().includes(q)
+    );
+  }, [verbs, verbSearch]);
+
   const visibleVerbs = useMemo(() => {
-    if (showAllVerbs || verbs.length <= COLLAPSED_LIMIT) return verbs;
-    const collapsed = verbs.slice(0, COLLAPSED_LIMIT);
-    // Always include the selected verb even if it's beyond the limit
+    if (verbSearch.trim()) return filteredVerbs;
+    if (showAllVerbs || filteredVerbs.length <= COLLAPSED_LIMIT) return filteredVerbs;
+    const collapsed = filteredVerbs.slice(0, COLLAPSED_LIMIT);
     if (selectedVerb && !collapsed.find((v) => v.id === selectedVerb.id)) {
-      collapsed.push(verbs.find((v) => v.id === selectedVerb.id)!);
+      const found = filteredVerbs.find((v) => v.id === selectedVerb.id);
+      if (found) collapsed.push(found);
     }
     return collapsed;
-  }, [verbs, showAllVerbs, selectedVerb]);
+  }, [filteredVerbs, showAllVerbs, selectedVerb, verbSearch]);
 
   const fetchVerbs = useCallback(async () => {
     const res = await fetch(`/api/conjugation?lang=${activeLanguage}`);
@@ -111,34 +124,53 @@ export default function ConjugationPage() {
 
   const handleGenerate = async () => {
     if (!inputVerb.trim()) return;
+
+    const verbs = inputVerb
+      .split(",")
+      .map((v) => v.trim())
+      .filter(Boolean);
+
+    if (verbs.length === 0) return;
+
     setGenerating(true);
-    try {
-      const res = await fetch("/api/conjugation", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          infinitive: inputVerb.trim(),
-          form: inputForm || undefined,
-          languageCode: activeLanguage,
-        }),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        toast.success("Conjugation generated");
-        setInputVerb("");
-        setInputForm("");
-        await fetchVerbs();
-        setSelectedVerb(data.verb);
-        setConjugations(data.conjugations || []);
-      } else {
-        const err = await res.json();
-        toast.error(err.error || "Generation failed");
+    let lastData: { verb: Verb; conjugations: Conjugation[] } | null = null;
+    let successCount = 0;
+
+    for (const verb of verbs) {
+      try {
+        const res = await fetch("/api/conjugation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            infinitive: verb,
+            form: inputForm || undefined,
+            languageCode: activeLanguage,
+          }),
+        });
+        if (res.ok) {
+          lastData = await res.json();
+          successCount++;
+        } else {
+          const err = await res.json();
+          toast.error(`${verb}: ${err.error || "Generation failed"}`);
+        }
+      } catch {
+        toast.error(`${verb}: Generation failed`);
       }
-    } catch {
-      toast.error("Generation failed");
-    } finally {
-      setGenerating(false);
     }
+
+    if (successCount > 0) {
+      toast.success(`Generated ${successCount} conjugation${successCount > 1 ? "s" : ""}`);
+      setInputVerb("");
+      setInputForm("");
+      await fetchVerbs();
+      if (lastData) {
+        setSelectedVerb(lastData.verb);
+        setConjugations(lastData.conjugations || []);
+      }
+    }
+
+    setGenerating(false);
   };
 
   const handleDelete = async (verbId: number) => {
@@ -201,7 +233,7 @@ export default function ConjugationPage() {
           dir="rtl"
           value={inputVerb}
           onChange={(e) => setInputVerb(e.target.value)}
-          placeholder="Enter verb (e.g. 'كَتَبَ', 'to write')"
+          placeholder="Enter verbs separated by commas, e.g. كَتَبَ, دَرَسَ"
           className="flex-1 font-target text-lg"
           onKeyDown={(e) => e.key === "Enter" && handleGenerate()}
         />
@@ -234,7 +266,18 @@ export default function ConjugationPage() {
         </div>
       </div>
 
-      {/* Verb chips */}
+      {/* Verb search + chips */}
+      {verbs.length > 0 && (
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search verbs..."
+            value={verbSearch}
+            onChange={(e) => setVerbSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+      )}
       {verbs.length > 0 && (
         <div className="flex gap-1.5 flex-wrap items-center">
           {visibleVerbs.map((verb) => (
@@ -288,12 +331,12 @@ export default function ConjugationPage() {
               </DropdownMenu>
             </Badge>
           ))}
-          {verbs.length > COLLAPSED_LIMIT && (
+          {!verbSearch.trim() && filteredVerbs.length > COLLAPSED_LIMIT && (
             <button
               onClick={() => setShowAllVerbs(!showAllVerbs)}
               className="text-xs text-muted-foreground hover:text-foreground transition-colors flex items-center gap-0.5 px-1"
             >
-              {showAllVerbs ? "Show less" : `Show all (${verbs.length})`}
+              {showAllVerbs ? "Show less" : `Show all (${filteredVerbs.length})`}
               <ChevronDown className={`h-3 w-3 transition-transform ${showAllVerbs ? "rotate-180" : ""}`} />
             </button>
           )}
@@ -342,7 +385,15 @@ export default function ConjugationPage() {
           <Separator />
 
           {/* Metadata row */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-px rounded-lg border bg-border overflow-hidden">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-px rounded-lg border bg-border overflow-hidden">
+            <div className="bg-card p-3">
+              <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
+                Verbal Noun (Masdar)
+              </p>
+              <TargetText className="text-2xl font-bold">
+                {selectedVerb.masdarVoweled || selectedVerb.masdar || "—"}
+              </TargetText>
+            </div>
             <div className="bg-card p-3">
               <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider mb-1">
                 Root
@@ -366,21 +417,6 @@ export default function ConjugationPage() {
               <p className="text-sm">{selectedVerb.verbType || "—"}</p>
             </div>
           </div>
-
-          {/* Masdar */}
-          {(selectedVerb.masdar || selectedVerb.masdarVoweled) && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border p-3">
-              <div>
-                <p className="text-sm font-medium">Verbal Noun (Masdar)</p>
-                <p className="text-xs text-muted-foreground">
-                  The concept of the action itself
-                </p>
-              </div>
-              <TargetText className="text-3xl font-bold">
-                {selectedVerb.masdarVoweled || selectedVerb.masdar}
-              </TargetText>
-            </div>
-          )}
 
           {/* Key forms */}
           {conjugations.length > 0 && (
