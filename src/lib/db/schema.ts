@@ -108,6 +108,24 @@ export const reviewHistory = sqliteTable("review_history", {
     .$defaultFn(() => new Date().toISOString()),
 });
 
+export const translations = sqliteTable("translations", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  languageCode: text("language_code").notNull(),
+  type: text("type", { enum: ["reference", "practice"] }).notNull(),
+  sourceText: text("source_text").notNull(),
+  translation: text("translation").notNull(),
+  transliteration: text("transliteration"),
+  notes: text("notes"),
+  attempt: text("attempt"),
+  score: integer("score"),
+  isCorrect: integer("is_correct", { mode: "boolean" }),
+  mistakes: text("mistakes"),
+  feedback: text("feedback"),
+  createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
 export const settings = sqliteTable("settings", {
   key: text("key").primaryKey(),
   value: text("value").notNull(),

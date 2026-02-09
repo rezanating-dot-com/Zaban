@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { TargetText } from "@/components/target-text";
-import { Loader2, CheckCircle2, XCircle } from "lucide-react";
+import { Loader2, CheckCircle2, XCircle, Bookmark, BookmarkCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
 
@@ -32,6 +32,8 @@ export function PracticeMode() {
   const [attempt, setAttempt] = useState("");
   const [result, setResult] = useState<ScoringResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleSubmit = async () => {
     if (!english.trim() || !attempt.trim()) return;
@@ -59,10 +61,44 @@ export function PracticeMode() {
     }
   };
 
+  const handleSave = async () => {
+    if (!result) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/translations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "practice",
+          languageCode: activeLanguage,
+          sourceText: english,
+          translation: result.correctedText,
+          transliteration: result.transliteration || null,
+          attempt,
+          score: result.score,
+          isCorrect: result.correct,
+          mistakes: result.mistakes,
+          feedback: result.feedback || null,
+        }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        toast.success("Translation saved");
+      } else {
+        toast.error("Failed to save translation");
+      }
+    } catch {
+      toast.error("Failed to save translation");
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const handleNext = () => {
     setEnglish("");
     setAttempt("");
     setResult(null);
+    setSaved(false);
   };
 
   return (
@@ -125,11 +161,28 @@ export function PracticeMode() {
                 )}
                 Score: {result.score}/100
               </CardTitle>
-              <Badge
-                variant={result.correct ? "default" : "destructive"}
-              >
-                {result.correct ? "Correct" : "Needs Work"}
-              </Badge>
+              <div className="flex items-center gap-1">
+                <Badge
+                  variant={result.correct ? "default" : "destructive"}
+                >
+                  {result.correct ? "Correct" : "Needs Work"}
+                </Badge>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleSave}
+                  disabled={saved || saving}
+                  title={saved ? "Saved" : "Save translation"}
+                >
+                  {saving ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : saved ? (
+                    <BookmarkCheck className="h-4 w-4" />
+                  ) : (
+                    <Bookmark className="h-4 w-4" />
+                  )}
+                </Button>
+              </div>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">

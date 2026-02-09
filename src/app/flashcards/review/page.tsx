@@ -6,7 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { TargetText } from "@/components/target-text";
 import { qualityLabels } from "@/lib/srs/sm2";
-import { RotateCcw, CheckCircle2 } from "lucide-react";
+import { RotateCcw, CheckCircle2, BookOpen, Languages, Layers } from "lucide-react";
 import { useLanguage } from "@/components/language-provider";
 
 interface FlashcardData {
@@ -33,6 +33,7 @@ export default function ReviewPage() {
   const [flipped, setFlipped] = useState(false);
   const [loading, setLoading] = useState(true);
   const [sessionDone, setSessionDone] = useState(false);
+  const [cardTypeFilter, setCardTypeFilter] = useState<"all" | "vocab" | "conjugation">("all");
   const [stats, setStats] = useState<SessionStats>({
     total: 0,
     reviewed: 0,
@@ -42,7 +43,9 @@ export default function ReviewPage() {
 
   const fetchCards = useCallback(async () => {
     setLoading(true);
-    const res = await fetch(`/api/flashcards?lang=${activeLanguage}`);
+    const params = new URLSearchParams({ lang: activeLanguage });
+    if (cardTypeFilter !== "all") params.set("cardType", cardTypeFilter);
+    const res = await fetch(`/api/flashcards?${params}`);
     const data = await res.json();
     setCards(data.due || []);
     setStats((prev) => ({ ...prev, total: data.dueCount || 0 }));
@@ -50,7 +53,7 @@ export default function ReviewPage() {
     setFlipped(false);
     setSessionDone(false);
     setLoading(false);
-  }, []);
+  }, [activeLanguage, cardTypeFilter]);
 
   useEffect(() => {
     fetchCards();
@@ -82,22 +85,50 @@ export default function ReviewPage() {
     }
   };
 
+  const filterButtons = (
+    <div className="flex justify-center gap-1">
+      {([
+        { value: "all", label: "All", icon: Layers },
+        { value: "vocab", label: "Vocab", icon: BookOpen },
+        { value: "conjugation", label: "Conjugation", icon: Languages },
+      ] as const).map(({ value, label, icon: Icon }) => (
+        <Button
+          key={value}
+          variant={cardTypeFilter === value ? "default" : "outline"}
+          size="sm"
+          onClick={() => setCardTypeFilter(value)}
+        >
+          <Icon className="h-4 w-4 mr-1" />
+          {label}
+        </Button>
+      ))}
+    </div>
+  );
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <p className="text-muted-foreground">Loading cards...</p>
+      <div className="max-w-lg mx-auto space-y-6">
+        {filterButtons}
+        <div className="flex items-center justify-center py-20">
+          <p className="text-muted-foreground">Loading cards...</p>
+        </div>
       </div>
     );
   }
 
   if (cards.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <CheckCircle2 className="h-12 w-12 text-green-500" />
-        <h2 className="text-xl font-semibold">No cards due!</h2>
-        <p className="text-muted-foreground">
-          Add vocabulary or conjugations to create flashcards.
-        </p>
+      <div className="max-w-lg mx-auto space-y-6">
+        {filterButtons}
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <CheckCircle2 className="h-12 w-12 text-green-500" />
+          <h2 className="text-xl font-semibold">No cards due!</h2>
+          <p className="text-muted-foreground">
+            {cardTypeFilter === "all"
+              ? "Add vocabulary or conjugations to create flashcards."
+              : `No ${cardTypeFilter} cards due for review.`}
+          </p>
+        </div>
       </div>
     );
   }
@@ -110,6 +141,7 @@ export default function ReviewPage() {
 
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-6">
+        {filterButtons}
         <CheckCircle2 className="h-12 w-12 text-green-500" />
         <h2 className="text-xl font-semibold">Session Complete!</h2>
         <div className="grid grid-cols-3 gap-6 text-center">
@@ -139,6 +171,7 @@ export default function ReviewPage() {
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
+      {filterButtons}
       <div className="space-y-2">
         <div className="flex justify-between text-sm text-muted-foreground">
           <span>

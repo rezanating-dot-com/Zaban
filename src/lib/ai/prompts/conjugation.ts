@@ -9,7 +9,7 @@ export function buildConjugationPrompt(
   const tenseList = langConfig.tenses.map((t) => t.id).join(", ");
   const personList = langConfig.persons.map((p) => p.id).join(", ");
 
-  const system = `You are a ${langConfig.name} language expert. You generate accurate verb conjugation tables with full metadata. Always respond with valid JSON only, no extra text.`;
+  const system = `You are a ${langConfig.name} language expert. You generate accurate verb conjugation tables with full metadata. ALL voweled/tashkeel fields MUST include complete diacritical marks (fatḥa, kasra, ḍamma, sukūn, shadda, tanwīn). Always respond with valid JSON only, no extra text.`;
 
   const user = `Generate the full conjugation table for the ${langConfig.name} verb "${verb}"${root ? ` (root: ${root})` : ""}${form ? ` (form: ${form})` : ""}.
 

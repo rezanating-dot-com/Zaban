@@ -1,0 +1,161 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { TargetText } from "@/components/target-text";
+import { Search, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useLanguage } from "@/components/language-provider";
+
+interface TranslationItem {
+  id: number;
+  languageCode: string;
+  type: "reference" | "practice";
+  sourceText: string;
+  translation: string;
+  transliteration: string | null;
+  notes: string | null;
+  attempt: string | null;
+  score: number | null;
+  isCorrect: boolean | null;
+  mistakes: string | null;
+  feedback: string | null;
+  createdAt: string;
+}
+
+type TypeFilter = "all" | "reference" | "practice";
+
+export function TranslationHistory() {
+  const { activeLanguage } = useLanguage();
+  const [items, setItems] = useState<TranslationItem[]>([]);
+  const [search, setSearch] = useState("");
+  const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+
+  const fetchTranslations = useCallback(async () => {
+    const params = new URLSearchParams();
+    params.set("lang", activeLanguage);
+    if (search) params.set("search", search);
+    if (typeFilter !== "all") params.set("type", typeFilter);
+    const res = await fetch(`/api/translations?${params}`);
+    const data = await res.json();
+    setItems(data);
+  }, [search, activeLanguage, typeFilter]);
+
+  useEffect(() => {
+    fetchTranslations();
+  }, [fetchTranslations]);
+
+  const handleDelete = async (id: number) => {
+    const res = await fetch(`/api/translations/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      toast.success("Translation deleted");
+      fetchTranslations();
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search translations..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-9"
+          />
+        </div>
+        <div className="flex gap-1">
+          {(["all", "reference", "practice"] as TypeFilter[]).map((t) => (
+            <Button
+              key={t}
+              variant={typeFilter === t ? "default" : "outline"}
+              size="sm"
+              onClick={() => setTypeFilter(t)}
+            >
+              {t.charAt(0).toUpperCase() + t.slice(1)}
+            </Button>
+          ))}
+        </div>
+      </div>
+
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Type</TableHead>
+              <TableHead>Source</TableHead>
+              <TableHead>Translation</TableHead>
+              <TableHead className="hidden sm:table-cell">Transliteration</TableHead>
+              <TableHead className="hidden md:table-cell">Score</TableHead>
+              <TableHead className="w-[60px]">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {items.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={6}
+                  className="text-center text-muted-foreground py-8"
+                >
+                  No saved translations yet. Translate something and click the
+                  bookmark icon to save it.
+                </TableCell>
+              </TableRow>
+            ) : (
+              items.map((item) => (
+                <TableRow key={item.id}>
+                  <TableCell>
+                    <Badge
+                      variant={item.type === "reference" ? "secondary" : "outline"}
+                    >
+                      {item.type}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-medium max-w-[200px] truncate">
+                    {item.sourceText}
+                  </TableCell>
+                  <TableCell>
+                    <TargetText className="text-lg">{item.translation}</TargetText>
+                  </TableCell>
+                  <TableCell className="hidden sm:table-cell text-muted-foreground">
+                    {item.transliteration}
+                  </TableCell>
+                  <TableCell className="hidden md:table-cell">
+                    {item.type === "practice" && item.score != null && (
+                      <Badge
+                        variant={item.isCorrect ? "default" : "destructive"}
+                      >
+                        {item.score}/100
+                      </Badge>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(item.id)}
+                      title="Delete"
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
+  );
+}

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TargetText } from "@/components/target-text";
-import { Loader2 } from "lucide-react";
+import { Loader2, Bookmark, BookmarkCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
 
@@ -20,11 +20,14 @@ export function ReferenceMode() {
   const [text, setText] = useState("");
   const [result, setResult] = useState<TranslationResult | null>(null);
   const [loading, setLoading] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   const handleTranslate = async () => {
     if (!text.trim()) return;
     setLoading(true);
     setResult(null);
+    setSaved(false);
 
     try {
       const res = await fetch("/api/translate/reference", {
@@ -44,6 +47,35 @@ export function ReferenceMode() {
       toast.error("Translation failed");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    if (!result) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/translations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: "reference",
+          languageCode: activeLanguage,
+          sourceText: text,
+          translation: result.translation,
+          transliteration: result.transliteration || null,
+          notes: result.notes || null,
+        }),
+      });
+      if (res.ok) {
+        setSaved(true);
+        toast.success("Translation saved");
+      } else {
+        toast.error("Failed to save translation");
+      }
+    } catch {
+      toast.error("Failed to save translation");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -72,7 +104,24 @@ export function ReferenceMode() {
       {result && (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Translation</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle className="text-base">Translation</CardTitle>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={handleSave}
+                disabled={saved || saving}
+                title={saved ? "Saved" : "Save translation"}
+              >
+                {saving ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : saved ? (
+                  <BookmarkCheck className="h-4 w-4" />
+                ) : (
+                  <Bookmark className="h-4 w-4" />
+                )}
+              </Button>
+            </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div>

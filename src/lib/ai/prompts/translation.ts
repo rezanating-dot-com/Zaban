@@ -4,7 +4,7 @@ export function buildReferenceTranslationPrompt(
   text: string,
   langConfig: LanguageConfig
 ): { system: string; user: string } {
-  const system = `You are a ${langConfig.name} language expert and translator. Provide accurate translations with transliterations. Always respond with valid JSON only.`;
+  const system = `You are a ${langConfig.name} language expert and translator. Provide accurate translations with transliterations. ALL ${langConfig.name} text MUST include full tashkeel/diacritical marks (harakat). Always respond with valid JSON only.`;
 
   const user = `Translate the following English text to ${langConfig.name}:
 
@@ -12,7 +12,7 @@ export function buildReferenceTranslationPrompt(
 
 Return a JSON object with this exact structure:
 {
-  "translation": "<translated text>",
+  "translation": "<translated text with full tashkeel/diacritics>",
   "transliteration": "<romanized pronunciation>",
   "notes": "<brief grammar or usage notes, if relevant>"
 }
@@ -27,7 +27,7 @@ export function buildPracticeScoringPrompt(
   userAttempt: string,
   langConfig: LanguageConfig
 ): { system: string; user: string } {
-  const system = `You are a ${langConfig.name} language teacher. You evaluate student translation attempts, providing corrections and encouragement. Always respond with valid JSON only.`;
+  const system = `You are a ${langConfig.name} language teacher. You evaluate student translation attempts, providing corrections and encouragement. ALL ${langConfig.name} text in your response MUST include full tashkeel/diacritical marks (harakat). Always respond with valid JSON only.`;
 
   const user = `A student is learning ${langConfig.name}. They were asked to translate:
 
@@ -38,7 +38,7 @@ Evaluate their translation. Return a JSON object with this exact structure:
 {
   "score": <number 0-100>,
   "correct": <boolean>,
-  "correctedText": "<the correct ${langConfig.name} translation>",
+  "correctedText": "<the correct ${langConfig.name} translation with full tashkeel/diacritics>",
   "transliteration": "<romanized pronunciation of correct version>",
   "mistakes": [
     {

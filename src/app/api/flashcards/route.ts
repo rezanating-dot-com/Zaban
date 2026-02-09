@@ -9,15 +9,21 @@ export async function GET(request: NextRequest) {
   seedDefaults();
 
   const lang = request.nextUrl.searchParams.get("lang") || "ar";
+  const cardType = request.nextUrl.searchParams.get("cardType");
   const now = new Date().toISOString();
 
-  const langFilter = eq(schema.flashcards.languageCode, lang);
+  const conditions = [eq(schema.flashcards.languageCode, lang)];
+  if (cardType === "vocab" || cardType === "conjugation") {
+    conditions.push(eq(schema.flashcards.cardType, cardType));
+  }
 
-  // Get due cards: nextReview <= now, filtered by language
+  const baseFilter = and(...conditions);
+
+  // Get due cards: nextReview <= now, filtered by language + cardType
   const dueCards = db
     .select()
     .from(schema.flashcards)
-    .where(and(langFilter, lte(schema.flashcards.nextReview, now)))
+    .where(and(baseFilter, lte(schema.flashcards.nextReview, now)))
     .orderBy(
       asc(schema.flashcards.repetitions),
       asc(schema.flashcards.easeFactor),
@@ -25,11 +31,11 @@ export async function GET(request: NextRequest) {
     )
     .all();
 
-  // Get total count for this language
+  // Get total count for this language + cardType
   const allCards = db
     .select()
     .from(schema.flashcards)
-    .where(langFilter)
+    .where(baseFilter)
     .all();
 
   return NextResponse.json({

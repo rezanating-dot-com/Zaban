@@ -9,26 +9,28 @@ export async function GET(request: NextRequest) {
   seedDefaults();
 
   const lang = request.nextUrl.searchParams.get("lang") || "ar";
+  const cardType = request.nextUrl.searchParams.get("cardType");
   const now = new Date().toISOString();
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const todayStr = today.toISOString();
 
+  const conditions = [eq(schema.flashcards.languageCode, lang)];
+  if (cardType === "vocab" || cardType === "conjugation") {
+    conditions.push(eq(schema.flashcards.cardType, cardType));
+  }
+  const baseFilter = and(...conditions);
+
   const totalCards = db
     .select({ count: sql<number>`count(*)` })
     .from(schema.flashcards)
-    .where(eq(schema.flashcards.languageCode, lang))
+    .where(baseFilter)
     .get();
 
   const dueCards = db
     .select({ count: sql<number>`count(*)` })
     .from(schema.flashcards)
-    .where(
-      and(
-        eq(schema.flashcards.languageCode, lang),
-        lte(schema.flashcards.nextReview, now)
-      )
-    )
+    .where(and(baseFilter, lte(schema.flashcards.nextReview, now)))
     .get();
 
   const reviewedToday = db
