@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -13,9 +14,15 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { TargetText } from "@/components/target-text";
-import { Search, Trash2 } from "lucide-react";
+import { Search, Trash2, X } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
+
+interface WordBreakdown {
+  word: string;
+  transliteration: string;
+  meaning: string;
+}
 
 interface TranslationItem {
   id: number;
@@ -25,6 +32,7 @@ interface TranslationItem {
   translation: string;
   transliteration: string | null;
   notes: string | null;
+  breakdown: string | null;
   attempt: string | null;
   score: number | null;
   isCorrect: boolean | null;
@@ -35,11 +43,32 @@ interface TranslationItem {
 
 type TypeFilter = "all" | "reference" | "practice";
 
+function parseBreakdown(raw: string | null): WordBreakdown[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function parseMistakes(raw: string | null): { type: string; explanation: string }[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export function TranslationHistory() {
   const { activeLanguage } = useLanguage();
   const [items, setItems] = useState<TranslationItem[]>([]);
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
+  const [selectedId, setSelectedId] = useState<number | null>(null);
 
   const fetchTranslations = useCallback(async () => {
     const params = new URLSearchParams();
@@ -55,13 +84,17 @@ export function TranslationHistory() {
     fetchTranslations();
   }, [fetchTranslations]);
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number, e: React.MouseEvent) => {
+    e.stopPropagation();
     const res = await fetch(`/api/translations/${id}`, { method: "DELETE" });
     if (res.ok) {
       toast.success("Translation deleted");
+      if (selectedId === id) setSelectedId(null);
       fetchTranslations();
     }
   };
+
+  const selectedItem = items.find((i) => i.id === selectedId) ?? null;
 
   return (
     <div className="space-y-4">
@@ -89,6 +122,8 @@ export function TranslationHistory() {
         </div>
       </div>
 
+      {selectedItem && <TranslationDetail item={selectedItem} onClose={() => setSelectedId(null)} />}
+
       <div className="rounded-md border overflow-x-auto">
         <Table>
           <TableHeader>
@@ -114,7 +149,11 @@ export function TranslationHistory() {
               </TableRow>
             ) : (
               items.map((item) => (
-                <TableRow key={item.id}>
+                <TableRow
+                  key={item.id}
+                  className={`cursor-pointer ${selectedId === item.id ? "bg-muted/50" : ""}`}
+                  onClick={() => setSelectedId(selectedId === item.id ? null : item.id)}
+                >
                   <TableCell>
                     <Badge
                       variant={item.type === "reference" ? "secondary" : "outline"}
@@ -144,7 +183,7 @@ export function TranslationHistory() {
                     <Button
                       variant="ghost"
                       size="icon"
-                      onClick={() => handleDelete(item.id)}
+                      onClick={(e) => handleDelete(item.id, e)}
                       title="Delete"
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
@@ -157,5 +196,103 @@ export function TranslationHistory() {
         </Table>
       </div>
     </div>
+  );
+}
+
+function TranslationDetail({ item, onClose }: { item: TranslationItem; onClose: () => void }) {
+  const breakdown = parseBreakdown(item.breakdown);
+  const mistakes = parseMistakes(item.mistakes);
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle className="text-base">Translation</CardTitle>
+          <Button variant="ghost" size="icon" onClick={onClose} title="Close">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div>
+          <p className="text-sm text-muted-foreground mb-1">Arabic</p>
+          <TargetText className="text-xl sm:text-3xl font-bold">
+            {item.translation}
+          </TargetText>
+        </div>
+
+        {item.transliteration && (
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Transliteration</p>
+            <p className="text-lg">{item.transliteration}</p>
+          </div>
+        )}
+
+        {breakdown.length > 0 && (
+          <div>
+            <p className="text-sm text-muted-foreground mb-2">Word Breakdown</p>
+            <div className="flex flex-wrap gap-2">
+              {breakdown.map((word, i) => (
+                <div
+                  key={i}
+                  className="rounded-lg border bg-muted/50 px-3 py-2 text-center"
+                >
+                  <TargetText className="text-lg font-semibold">
+                    {word.word}
+                  </TargetText>
+                  <p className="text-xs text-muted-foreground">
+                    {word.transliteration}
+                  </p>
+                  <p className="text-xs font-medium">{word.meaning}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {item.type === "practice" && item.attempt && (
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Your Attempt</p>
+            <TargetText className="text-lg">{item.attempt}</TargetText>
+            {item.score != null && (
+              <Badge
+                variant={item.isCorrect ? "default" : "destructive"}
+                className="mt-1"
+              >
+                {item.score}/100
+              </Badge>
+            )}
+          </div>
+        )}
+
+        {mistakes.length > 0 && (
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Mistakes</p>
+            <ul className="space-y-1">
+              {mistakes.map((m, i) => (
+                <li key={i} className="text-sm">
+                  <Badge variant="outline" className="mr-1 text-xs">{m.type}</Badge>
+                  {m.explanation}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {item.feedback && (
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Feedback</p>
+            <p className="text-sm">{item.feedback}</p>
+          </div>
+        )}
+
+        {item.notes && (
+          <div>
+            <p className="text-sm text-muted-foreground mb-1">Notes</p>
+            <p className="text-sm">{item.notes}</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 }
