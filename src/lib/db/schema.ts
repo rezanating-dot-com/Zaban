@@ -116,6 +116,7 @@ export const translations = sqliteTable("translations", {
   translation: text("translation").notNull(),
   transliteration: text("transliteration"),
   notes: text("notes"),
+  breakdown: text("breakdown"),
   attempt: text("attempt"),
   score: integer("score"),
   isCorrect: integer("is_correct", { mode: "boolean" }),

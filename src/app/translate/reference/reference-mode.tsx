@@ -9,10 +9,17 @@ import { Loader2, Bookmark, BookmarkCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
 
+interface WordBreakdown {
+  word: string;
+  transliteration: string;
+  meaning: string;
+}
+
 interface TranslationResult {
   translation: string;
   transliteration: string;
   notes: string;
+  breakdown?: WordBreakdown[];
 }
 
 export function ReferenceMode() {
@@ -64,6 +71,7 @@ export function ReferenceMode() {
           translation: result.translation,
           transliteration: result.transliteration || null,
           notes: result.notes || null,
+          breakdown: result.breakdown ? JSON.stringify(result.breakdown) : null,
         }),
       });
       if (res.ok) {
@@ -136,6 +144,29 @@ export function ReferenceMode() {
               </p>
               <p className="text-lg">{result.transliteration}</p>
             </div>
+            {result.breakdown && result.breakdown.length > 0 && (
+              <div>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Word Breakdown
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {result.breakdown.map((item, i) => (
+                    <div
+                      key={i}
+                      className="rounded-lg border bg-muted/50 px-3 py-2 text-center"
+                    >
+                      <TargetText className="text-lg font-semibold">
+                        {item.word}
+                      </TargetText>
+                      <p className="text-xs text-muted-foreground">
+                        {item.transliteration}
+                      </p>
+                      <p className="text-xs font-medium">{item.meaning}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             {result.notes && (
               <div>
                 <p className="text-sm text-muted-foreground mb-1">Notes</p>

@@ -14,8 +14,13 @@ Return a JSON object with this exact structure:
 {
   "translation": "<translated text with full tashkeel/diacritics>",
   "transliteration": "<romanized pronunciation>",
-  "notes": "<brief grammar or usage notes, if relevant>"
+  "notes": "<brief grammar or usage notes, if relevant>",
+  "breakdown": [
+    { "word": "<${langConfig.name} word with diacritics>", "transliteration": "<romanized>", "meaning": "<English meaning>" }
+  ]
 }
+
+The "breakdown" array should contain one entry per word in the translation, in order. Keep meanings brief (1-3 words). Include particles and prepositions.
 
 Return ONLY the JSON object, no markdown, no explanation.`;
 

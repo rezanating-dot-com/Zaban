@@ -63,6 +63,7 @@ export async function POST(request: NextRequest) {
       translation,
       transliteration: body.transliteration || null,
       notes: body.notes || null,
+      breakdown: body.breakdown || null,
       attempt: body.attempt || null,
       score: body.score ?? null,
       isCorrect: body.isCorrect ?? null,
