@@ -15,16 +15,11 @@ import {
 } from "@/components/ui/table";
 import { Checkbox } from "@/components/ui/checkbox";
 import { TargetText } from "@/components/target-text";
+import { BreakdownCard, BreakdownCardCompact, type WordBreakdown } from "@/components/breakdown-card";
 import { Search, Trash2, X, Printer, Merge } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
 import { ConfirmDeleteDialog } from "@/components/confirm-delete-dialog";
-
-interface WordBreakdown {
-  word: string;
-  transliteration: string;
-  meaning: string;
-}
 
 interface TranslationItem {
   id: number;
@@ -383,14 +378,7 @@ function PrintTranslationCard({ item }: { item: TranslationItem }) {
           <p className="text-xs text-muted-foreground mb-1">Breakdown</p>
           <div className="flex flex-wrap gap-2">
             {breakdown.map((word, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1 rounded border bg-muted/50 px-2 py-1 text-sm"
-              >
-                <TargetText className="font-semibold">{word.word}</TargetText>
-                <span className="text-muted-foreground">({word.transliteration})</span>
-                <span>{word.meaning}</span>
-              </span>
+              <BreakdownCardCompact key={i} item={word} />
             ))}
           </div>
         </div>
@@ -436,18 +424,7 @@ function TranslationDetail({ item, onClose }: { item: TranslationItem; onClose: 
             <p className="text-sm text-muted-foreground mb-2">Word Breakdown</p>
             <div className="flex flex-wrap gap-2">
               {breakdown.map((word, i) => (
-                <div
-                  key={i}
-                  className="rounded-lg border bg-muted/50 px-3 py-2 text-center"
-                >
-                  <TargetText className="text-lg font-semibold">
-                    {word.word}
-                  </TargetText>
-                  <p className="text-xs text-muted-foreground">
-                    {word.transliteration}
-                  </p>
-                  <p className="text-xs font-medium">{word.meaning}</p>
-                </div>
+                <BreakdownCard key={i} item={word} />
               ))}
             </div>
           </div>

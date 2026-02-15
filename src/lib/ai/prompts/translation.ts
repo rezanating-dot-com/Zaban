@@ -21,11 +21,20 @@ Return a JSON object with this exact structure:
   "transliteration": "<romanized pronunciation>",
   "notes": "<brief grammar or usage notes, if relevant>",
   "breakdown": [
-    { "word": "<${langConfig.name} word with diacritics>", "transliteration": "<romanized>", "meaning": "<English meaning>" }
+    {
+      "word": "<${langConfig.name} word with diacritics>",
+      "transliteration": "<romanized>",
+      "meaning": "<English meaning>",
+      "parts": [
+        { "arabic": "<morpheme with diacritics>", "transliteration": "<romanized>", "meaning": "<meaning>" }
+      ]
+    }
   ]
 }
 
 The "breakdown" array should contain one entry per word in the translation, in order. Keep meanings brief (1-3 words). Include particles and prepositions.
+
+The "parts" field is optional. Include it ONLY when a word has a detachable prefix or attached preposition/particle (e.g. كَ، وَ، بِ، لِ، فَ، الـ). Split the word into its morphemes. Do NOT split verb conjugations or internal morphology — only split detachable particles and prepositions. Omit "parts" for simple words.
 
 Return ONLY the JSON object, no markdown, no explanation.`;
 

@@ -12,15 +12,10 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TargetText } from "@/components/target-text";
+import { BreakdownCard, type WordBreakdown } from "@/components/breakdown-card";
 import { Loader2, BookmarkCheck } from "lucide-react";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/language-provider";
-
-interface WordBreakdown {
-  word: string;
-  transliteration: string;
-  meaning: string;
-}
 
 interface TranslationResult {
   translation: string;
@@ -158,18 +153,7 @@ export function ReferenceMode() {
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {result.breakdown.map((item, i) => (
-                    <div
-                      key={i}
-                      className="rounded-lg border bg-muted/50 px-3 py-2 text-center"
-                    >
-                      <TargetText className="text-lg font-semibold">
-                        {item.word}
-                      </TargetText>
-                      <p className="text-xs text-muted-foreground">
-                        {item.transliteration}
-                      </p>
-                      <p className="text-xs font-medium">{item.meaning}</p>
-                    </div>
+                    <BreakdownCard key={i} item={item} />
                   ))}
                 </div>
               </div>
