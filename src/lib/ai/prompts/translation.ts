@@ -9,7 +9,7 @@ export function buildReferenceTranslationPrompt(
     ? `\nThe speaker is addressing a ${addresseeGender} person. Use the appropriate gendered verb forms, pronouns, and grammar for a ${addresseeGender} addressee.`
     : "";
 
-  const system = `You are a ${langConfig.name} language expert and translator. Provide accurate translations with transliterations. ALL ${langConfig.name} text MUST include full tashkeel/diacritical marks (harakat). Always respond with valid JSON only.${genderInstruction}`;
+  const system = `You are a ${langConfig.name} language expert and translator. Provide accurate translations with transliterations. Use natural, conversational language — the way educated native speakers actually talk in everyday life, NOT written/literary register. For example in Farsi, prefer "لغت" over "واژگان", "سخت" over "دشواری", "حرف زدن" over "ابراز". Avoid bookish, poetic, or academic vocabulary entirely. ALL ${langConfig.name} text MUST include full tashkeel/diacritical marks (harakat). Always respond with valid JSON only.${genderInstruction}`;
 
   const user = `Translate the following English text to ${langConfig.name}:
 
@@ -51,7 +51,7 @@ export function buildPracticeScoringPrompt(
     ? `\nThe original English text is addressing a ${addresseeGender} person. Evaluate and correct the translation using the appropriate gendered verb forms, pronouns, and grammar for a ${addresseeGender} addressee.`
     : "";
 
-  const system = `You are a ${langConfig.name} language teacher. You evaluate student translation attempts, providing corrections and encouragement. ALL ${langConfig.name} text in your response MUST include full tashkeel/diacritical marks (harakat). Always respond with valid JSON only.${genderInstruction}`;
+  const system = `You are a ${langConfig.name} language teacher. You evaluate student translation attempts, providing corrections and encouragement. Use natural, conversational language — the way educated native speakers actually talk, NOT written/literary register. Avoid bookish or academic vocabulary. ALL ${langConfig.name} text in your response MUST include full tashkeel/diacritical marks (harakat). Always respond with valid JSON only.${genderInstruction}`;
 
   const user = `A student is learning ${langConfig.name}. They were asked to translate:
 

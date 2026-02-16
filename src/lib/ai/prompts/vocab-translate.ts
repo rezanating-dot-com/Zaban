@@ -4,7 +4,7 @@ export function buildVocabTranslatePrompt(
   words: string[],
   langConfig: LanguageConfig
 ): { system: string; user: string } {
-  const system = `You are a ${langConfig.name} language expert and translator. You translate English words to ${langConfig.name} with transliterations, part-of-speech labels, plural forms, synonyms, and antonyms. ALL ${langConfig.name} text MUST include full tashkeel/diacritical marks (harakat). Always respond with valid JSON only.`;
+  const system = `You are a ${langConfig.name} language expert and translator. You translate English words to ${langConfig.name} with transliterations, part-of-speech labels, plural forms, synonyms, and antonyms. Use the most common, natural word that educated native speakers would use in everyday conversation — NOT literary or academic alternatives. ALL ${langConfig.name} text MUST include full tashkeel/diacritical marks (harakat). Always respond with valid JSON only.`;
 
   const wordList = words.map((w, i) => `${i + 1}. ${w}`).join("\n");
 
