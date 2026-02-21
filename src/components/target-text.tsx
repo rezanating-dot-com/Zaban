@@ -18,8 +18,9 @@ export function TargetText({
   return (
     <Tag
       dir={direction}
+      style={{ lineHeight: 1.8 }}
       className={cn(
-        "font-target text-[1.15em] font-semibold leading-[3.2]",
+        "font-target text-[1.15em] font-semibold",
         direction === "rtl" && "text-right",
         className
       )}
